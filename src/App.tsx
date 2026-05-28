@@ -6,6 +6,7 @@ import { AuthProvider } from './hooks/useAuth'
 import { Dashboard } from './pages/Dashboard'
 import { Analytics } from './pages/Analytics'
 import { Automation } from './pages/Automation'
+import { AuthDiagnostics } from './pages/AuthDiagnostics'
 import { Calendar } from './pages/Calendar'
 import { Diagnostics } from './pages/Diagnostics'
 import { Exports } from './pages/Exports'
@@ -28,6 +29,7 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login mode="login" />} />
             <Route path="/signup" element={<Login mode="signup" />} />
+            <Route path="/auth-diagnostics" element={<AuthDiagnostics />} />
             <Route element={<ProtectedRoute />}>
               <Route element={<Layout />}>
                 <Route index element={<Dashboard />} />

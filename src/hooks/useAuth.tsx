@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
-import { supabase } from '../integrations/supabase/client'
+import { isSupabaseConfigured, supabase } from '../integrations/supabase/client'
 
 interface AuthContextValue {
   user: User | null
@@ -25,6 +25,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!mounted) return
       setSession(data.session)
       setLoading(false)
+    }).catch((error: unknown) => {
+      console.error('Supabase getSession failed.', error)
+      if (!mounted) return
+      setSession(null)
+      setLoading(false)
     })
 
     const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
@@ -44,10 +49,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       loading,
       async signIn(email, password) {
+        if (!isSupabaseConfigured) throw new Error('Supabase is not configured. Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY.')
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
       },
       async signUp(email, password) {
+        if (!isSupabaseConfigured) throw new Error('Supabase is not configured. Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY.')
         const { error } = await supabase.auth.signUp({ email, password })
         if (error) throw error
       },

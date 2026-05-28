@@ -2,12 +2,14 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Navigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { authErrorMessage } from '../lib/authErrors'
 
 export function Login({ mode }: { mode: 'login' | 'signup' }) {
   const { signIn, signUp, user } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   if (user) return <Navigate to="/" replace />
@@ -16,12 +18,17 @@ export function Login({ mode }: { mode: 'login' | 'signup' }) {
     event.preventDefault()
     setLoading(true)
     setError(null)
+    setSuccess(null)
 
     try {
       if (mode === 'login') await signIn(email, password)
-      else await signUp(email, password)
+      else {
+        await signUp(email, password)
+        setSuccess('Signup request completed. Check your email if confirmation is required, or continue to the app if your session starts automatically.')
+      }
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'Authentication failed.')
+      console.error(`${mode} failed`, nextError)
+      setError(authErrorMessage(nextError))
     } finally {
       setLoading(false)
     }
@@ -49,6 +56,7 @@ export function Login({ mode }: { mode: 'login' | 'signup' }) {
           <label className="mt-4 block text-sm font-medium" htmlFor="password">Password</label>
           <input id="password" className="input mt-2" type="password" minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} required />
           {error ? <p className="mt-4 rounded-md bg-rose-50 p-3 text-sm text-rose-700 dark:bg-rose-950/40 dark:text-rose-200">{error}</p> : null}
+          {success ? <p className="mt-4 rounded-md bg-emerald-50 p-3 text-sm text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200">{success}</p> : null}
           <button className="btn-primary mt-6 w-full" type="submit" disabled={loading}>
             {loading ? 'Working...' : mode === 'login' ? 'Login' : 'Create account'}
           </button>

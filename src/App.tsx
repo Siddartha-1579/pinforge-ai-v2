@@ -31,6 +31,7 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route element={<Layout />}>
                 <Route index element={<Dashboard />} />
+                <Route path="dashboard" element={<Dashboard />} />
                 <Route path="research" element={<ProductResearch />} />
                 <Route path="links" element={<Links />} />
                 <Route path="generator" element={<Generator />} />

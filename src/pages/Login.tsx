@@ -1,0 +1,65 @@
+import { useState } from 'react'
+import type { FormEvent } from 'react'
+import { Navigate, Link } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
+
+export function Login({ mode }: { mode: 'login' | 'signup' }) {
+  const { signIn, signUp, user } = useAuth()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  if (user) return <Navigate to="/" replace />
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    try {
+      if (mode === 'login') await signIn(email, password)
+      else await signUp(email, password)
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : 'Authentication failed.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <main className="grid min-h-screen bg-stone-50 p-4 text-slate-950 dark:bg-slate-950 dark:text-white md:grid-cols-[1.1fr_0.9fr]">
+      <section className="hidden rounded-lg bg-slate-950 p-10 text-white md:flex md:flex-col md:justify-between">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-wide text-rose-300">PinForge AI v2</p>
+          <h1 className="mt-4 max-w-xl text-5xl font-semibold">Pinterest affiliate content, from product idea to upload-ready pin.</h1>
+        </div>
+        <div className="grid grid-cols-3 gap-3 text-sm text-slate-300">
+          <span>Research</span>
+          <span>Generate</span>
+          <span>Prepare</span>
+        </div>
+      </section>
+      <section className="flex items-center justify-center">
+        <form className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900" onSubmit={handleSubmit}>
+          <p className="text-sm font-semibold uppercase tracking-wide text-rose-600">{mode === 'login' ? 'Welcome back' : 'Create workspace'}</p>
+          <h2 className="mt-2 text-2xl font-semibold">{mode === 'login' ? 'Login to PinForge' : 'Signup for PinForge'}</h2>
+          <label className="mt-6 block text-sm font-medium" htmlFor="email">Email</label>
+          <input id="email" className="input mt-2" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+          <label className="mt-4 block text-sm font-medium" htmlFor="password">Password</label>
+          <input id="password" className="input mt-2" type="password" minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} required />
+          {error ? <p className="mt-4 rounded-md bg-rose-50 p-3 text-sm text-rose-700 dark:bg-rose-950/40 dark:text-rose-200">{error}</p> : null}
+          <button className="btn-primary mt-6 w-full" type="submit" disabled={loading}>
+            {loading ? 'Working...' : mode === 'login' ? 'Login' : 'Create account'}
+          </button>
+          <p className="mt-5 text-center text-sm text-slate-600 dark:text-slate-300">
+            {mode === 'login' ? 'Need an account?' : 'Already have an account?'}{' '}
+            <Link className="font-semibold text-rose-600" to={mode === 'login' ? '/signup' : '/login'}>
+              {mode === 'login' ? 'Signup' : 'Login'}
+            </Link>
+          </p>
+        </form>
+      </section>
+    </main>
+  )
+}

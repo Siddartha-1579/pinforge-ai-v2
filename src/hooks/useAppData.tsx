@@ -21,6 +21,7 @@ interface AppDataContextValue {
   error: string | null
   refresh: () => Promise<void>
   saveProduct: (product: Product) => Promise<void>
+  deleteProduct: (id: string) => Promise<void>
   saveLink: (link: Omit<AffiliateLink, 'id'> & { id?: string }) => Promise<void>
   deleteLink: (id: string) => Promise<void>
   savePin: (pin: Omit<GeneratedPin, 'id' | 'uploaded'> & { id?: string; uploaded?: boolean }) => Promise<void>
@@ -117,7 +118,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       setTrendHistory(trendsResult.data ?? [])
       setSettings(settingsResult.data ?? defaultSettings)
     } catch (nextError) {
-      console.error(nextError)
+      console.warn('Workspace load failed.', nextError)
       setError('Could not load your workspace. Showing demo data so you can keep working.')
       setProducts(demoProducts)
       setLinks(demoLinks)
@@ -158,11 +159,20 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       error,
       refresh,
       async saveProduct(product) {
-        const payload = { ...product, user_id: user?.id }
+        const payload = { ...product, id: product.id ?? crypto.randomUUID(), user_id: user?.id }
         setProducts((current) => [payload, ...current.filter((item) => item.id !== product.id)])
         if (!user) return
         const { error: saveError } = await supabase.from('products').upsert(payload)
         if (saveError) throw saveError
+      },
+      async deleteProduct(id) {
+        setProducts((current) => current.filter((item) => item.id !== id))
+        setLinks((current) => current.map((item) => (item.product_id === id ? { ...item, product_id: null } : item)))
+        setPins((current) => current.map((item) => (item.product_id === id ? { ...item, product_id: null } : item)))
+        setQueue((current) => current.map((item) => (item.product_id === id ? { ...item, product_id: null } : item)))
+        if (!user) return
+        const { error: deleteError } = await supabase.from('products').delete().eq('id', id)
+        if (deleteError) throw deleteError
       },
       async saveLink(link) {
         const payload = { ...link, id: link.id ?? crypto.randomUUID(), user_id: user?.id }

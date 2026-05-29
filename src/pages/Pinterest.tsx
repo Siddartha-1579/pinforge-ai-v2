@@ -7,43 +7,59 @@ import { requestPinterestConnect, requestPinterestDisconnect, requestTokenRefres
 export function Pinterest() {
   const { pinterestAccounts, disconnectPinterestAccount, saveUploadLog } = useAppData()
   const [now] = useState(() => Date.now())
+  const [busy, setBusy] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
 
   async function connect() {
+    setBusy('connect')
+    setMessage(null)
     try {
       await requestPinterestConnect()
-    } catch (error) {
+    } catch {
+      setMessage('Pinterest connection could not be started. Please check diagnostics.')
       await saveUploadLog({
         id: crypto.randomUUID(),
         level: 'error',
-        message: error instanceof Error ? error.message : 'Pinterest connection failed.',
+        message: 'Pinterest connection failed.',
         created_at: new Date().toISOString(),
       })
+    } finally {
+      setBusy(null)
     }
   }
 
   async function disconnect(id: string) {
+    setBusy(id)
+    setMessage(null)
     try {
       await requestPinterestDisconnect(id)
-    } catch (error) {
-      await saveUploadLog({ id: crypto.randomUUID(), level: 'warn', message: `Local disconnect used: ${error instanceof Error ? error.message : 'edge function unavailable'}`, created_at: new Date().toISOString() })
+    } catch {
+      await saveUploadLog({ id: crypto.randomUUID(), level: 'warn', message: 'Local disconnect used because the edge function was unavailable.', created_at: new Date().toISOString() })
     }
     await disconnectPinterestAccount(id)
+    setBusy(null)
   }
 
   async function refresh(id: string) {
+    setBusy(id)
+    setMessage(null)
     try {
       await requestTokenRefresh(id)
-    } catch (error) {
-      await saveUploadLog({ id: crypto.randomUUID(), level: 'error', message: error instanceof Error ? error.message : 'Token refresh failed.', created_at: new Date().toISOString() })
+      setMessage('Pinterest token refresh requested.')
+    } catch {
+      setMessage('Pinterest token could not be refreshed. Please reconnect if publishing fails.')
+      await saveUploadLog({ id: crypto.randomUUID(), level: 'error', message: 'Token refresh failed.', created_at: new Date().toISOString() })
+    } finally {
+      setBusy(null)
     }
   }
 
   return (
     <>
       <PageHeader title="Pinterest Connection" eyebrow="OAuth management">
-        <button className="btn-primary" type="button" onClick={() => void connect()}>
+        <button className="btn-primary" type="button" disabled={busy === 'connect'} onClick={() => void connect()}>
           <Link2 size={16} />
-          Connect Pinterest
+          {busy === 'connect' ? 'Connecting...' : 'Connect Pinterest'}
         </button>
       </PageHeader>
 
@@ -51,6 +67,7 @@ export function Pinterest() {
         <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-100">
           Tokens are designed to be stored in Supabase tables and refreshed through edge functions. The client only displays account status.
         </div>
+        {message ? <p className="mt-3 rounded-md bg-slate-50 p-3 text-sm text-slate-700 dark:bg-white/5 dark:text-slate-200">{message}</p> : null}
         <div className="mt-4 space-y-3">
           {pinterestAccounts.length === 0 ? (
             <EmptyState title="No Pinterest account connected" description="Manual upload workflows keep working while OAuth is disconnected." />
@@ -67,8 +84,8 @@ export function Pinterest() {
                     </div>
                     {expiresSoon ? <span className="inline-flex items-center gap-2 rounded-md bg-amber-100 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-100"><AlertTriangle size={16} />Token expires soon</span> : null}
                     <div className="flex gap-2">
-                      <button className="btn-secondary" type="button" onClick={() => void refresh(account.id)}><RefreshCw size={16} />Refresh</button>
-                      <button className="btn-secondary" type="button" onClick={() => void disconnect(account.id)}><Unplug size={16} />Disconnect</button>
+                      <button className="btn-secondary" type="button" disabled={busy === account.id} onClick={() => void refresh(account.id)}><RefreshCw size={16} />Refresh</button>
+                      <button className="btn-secondary" type="button" disabled={busy === account.id} onClick={() => void disconnect(account.id)}><Unplug size={16} />Disconnect</button>
                     </div>
                   </div>
                 </div>

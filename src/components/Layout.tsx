@@ -3,6 +3,7 @@ import { BarChart3, Bot, CalendarDays, Download, Gauge, Image, Layers, Link2, Li
 import { useState } from 'react'
 import { AppDataProvider } from '../hooks/useAppData'
 import { useAuth } from '../hooks/useAuth'
+import { authErrorMessage } from '../lib/authErrors'
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: BarChart3 },
@@ -24,12 +25,18 @@ const navItems = [
 
 export function Layout() {
   const [open, setOpen] = useState(false)
+  const [logoutError, setLogoutError] = useState<string | null>(null)
   const { signOut, user } = useAuth()
   const navigate = useNavigate()
 
   async function handleLogout() {
-    await signOut()
-    navigate('/login')
+    setLogoutError(null)
+    try {
+      await signOut()
+      navigate('/login')
+    } catch (error) {
+      setLogoutError(authErrorMessage(error))
+    }
   }
 
   return (
@@ -76,6 +83,7 @@ export function Layout() {
 
             <div className="mt-auto rounded-lg border border-slate-200 p-3 dark:border-white/10">
               <p className="truncate text-sm font-medium">{user?.email}</p>
+              {logoutError ? <p className="mt-2 rounded-md bg-rose-50 p-2 text-xs text-rose-700 dark:bg-rose-950/40 dark:text-rose-200">{logoutError}</p> : null}
               <button className="mt-3 flex w-full items-center justify-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm dark:border-white/10" type="button" onClick={handleLogout}>
                 <LogOut size={16} />
                 Logout

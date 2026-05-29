@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { authErrorMessage } from '../lib/authErrors'
 
 export function Login({ mode }: { mode: 'login' | 'signup' }) {
-  const { signIn, signUp, user } = useAuth()
+  const { signIn, signUp, resetPassword, user } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -27,7 +27,26 @@ export function Login({ mode }: { mode: 'login' | 'signup' }) {
         setSuccess('Signup request completed. Check your email if confirmation is required, or continue to the app if your session starts automatically.')
       }
     } catch (nextError) {
-      console.error(`${mode} failed`, nextError)
+      setError(authErrorMessage(nextError))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handlePasswordReset() {
+    setError(null)
+    setSuccess(null)
+
+    if (!email) {
+      setError('Enter your email address first, then request a reset link.')
+      return
+    }
+
+    setLoading(true)
+    try {
+      await resetPassword(email)
+      setSuccess('Password reset email sent. Check your inbox for the next step.')
+    } catch (nextError) {
       setError(authErrorMessage(nextError))
     } finally {
       setLoading(false)
@@ -60,6 +79,11 @@ export function Login({ mode }: { mode: 'login' | 'signup' }) {
           <button className="btn-primary mt-6 w-full" type="submit" disabled={loading}>
             {loading ? 'Working...' : mode === 'login' ? 'Login' : 'Create account'}
           </button>
+          {mode === 'login' ? (
+            <button className="btn-secondary mt-3 w-full" type="button" disabled={loading} onClick={handlePasswordReset}>
+              Send password reset email
+            </button>
+          ) : null}
           <p className="mt-5 text-center text-sm text-slate-600 dark:text-slate-300">
             {mode === 'login' ? 'Need an account?' : 'Already have an account?'}{' '}
             <Link className="font-semibold text-rose-600" to={mode === 'login' ? '/signup' : '/login'}>

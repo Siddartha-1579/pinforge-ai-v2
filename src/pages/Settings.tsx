@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { Pause, Play, Save, ShieldAlert } from 'lucide-react'
 import { Card, PageHeader } from '../components/ui'
@@ -11,12 +11,24 @@ export function Settings() {
   const { settings, saveSettings } = useAppData()
   const [form, setForm] = useState(settings)
   const [status, setStatus] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    queueMicrotask(() => setForm(settings))
+  }, [settings])
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setStatus(null)
-    await saveSettings(form)
-    setStatus('Settings saved.')
+    setSaving(true)
+    try {
+      await saveSettings(form)
+      setStatus('Settings saved.')
+    } catch {
+      setStatus('Settings could not be saved. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -24,7 +36,7 @@ export function Settings() {
       <PageHeader title="Settings" eyebrow="Brand controls" />
       <Card className="max-w-3xl">
         <form className="space-y-5" onSubmit={handleSubmit}>
-          <Field label="Global Pin Instructions">
+          <Field label="Pin Generation Instructions">
             <textarea className="input min-h-28" value={form.global_pin_instructions} onChange={(event) => setForm({ ...form, global_pin_instructions: event.target.value })} />
           </Field>
           <Field label="Brand tone">
@@ -75,10 +87,10 @@ export function Settings() {
               <button className="btn-secondary" type="button" onClick={() => setForm({ ...form, emergency_stop: true, automation_paused: true })}><ShieldAlert size={16} />Emergency stop</button>
             </div>
           </div>
-          {status ? <p className="text-sm text-emerald-600">{status}</p> : null}
-          <button className="btn-primary" type="submit">
+          {status ? <p className={status.includes('could not') ? 'text-sm text-rose-600' : 'text-sm text-emerald-600'}>{status}</p> : null}
+          <button className="btn-primary" type="submit" disabled={saving}>
             <Save size={16} />
-            Save settings
+            {saving ? 'Saving...' : 'Save settings'}
           </button>
         </form>
       </Card>

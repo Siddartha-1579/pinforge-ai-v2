@@ -1,4 +1,5 @@
 import { Pause, Play, ShieldAlert, Wand2 } from 'lucide-react'
+import { useState } from 'react'
 import { Card, EmptyState, PageHeader } from '../components/ui'
 import { useAppData } from '../hooks/useAppData'
 import { automationBlockedReason, getFeatureFlags } from '../lib/featureFlags'
@@ -6,6 +7,8 @@ import { publishQueueItem } from '../lib/publishing'
 
 export function Automation() {
   const { settings, saveSettings, queue, pins, pinterestAccounts, publishingJobs, uploadLogs, savePublishingJob, saveUploadLog, bulkUpdateQueue, updatePinWorkflow } = useAppData()
+  const [processing, setProcessing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const flags = getFeatureFlags(settings)
   const connectedAccount = pinterestAccounts.find((account) => account.connected)
   const blockedReason = automationBlockedReason(settings, Boolean(connectedAccount))
@@ -14,23 +17,41 @@ export function Automation() {
   async function processNext() {
     const item = readyItems[0]
     if (!item) return
-    const result = await publishQueueItem({ item, settings, account: connectedAccount })
-    await savePublishingJob(result.job)
-    await saveUploadLog(result.log)
-    if (result.job.status === 'Published') {
-      await bulkUpdateQueue([item.id], { status: 'Published' })
-      await updatePinWorkflow(item.pin_id, { status: 'Published', uploaded: true, published_at: new Date().toISOString() })
-    } else if (result.job.status === 'Retrying') {
-      await bulkUpdateQueue([item.id], { status: 'Failed' })
+    setProcessing(true)
+    setError(null)
+    try {
+      const result = await publishQueueItem({ item, settings, account: connectedAccount })
+      await savePublishingJob(result.job)
+      await saveUploadLog(result.log)
+      if (result.job.status === 'Published') {
+        await bulkUpdateQueue([item.id], { status: 'Published' })
+        await updatePinWorkflow(item.pin_id, { status: 'Published', uploaded: true, published_at: new Date().toISOString() })
+      } else if (result.job.status === 'Retrying' || result.job.status === 'Failed') {
+        await bulkUpdateQueue([item.id], { status: 'Failed' })
+        const recentFailures = publishingJobs.filter((job) => job.status === 'Failed' || job.status === 'Retrying').length + 1
+        if (recentFailures >= (settings.retry_limits ?? 2)) {
+          await saveSettings({ ...settings, automation_paused: true })
+          await saveUploadLog({
+            id: crypto.randomUUID(),
+            level: 'warn',
+            message: 'Automation paused after repeated publishing failures.',
+            created_at: new Date().toISOString(),
+          })
+        }
+      }
+    } catch {
+      setError('Automation could not process the next item. Please check diagnostics.')
+    } finally {
+      setProcessing(false)
     }
   }
 
   return (
     <>
       <PageHeader title="Automation Engine" eyebrow="Optional publishing controls">
-        <button className="btn-primary" type="button" disabled={!flags.AUTO_PUBLISH || Boolean(blockedReason)} onClick={() => void processNext()}>
+        <button className="btn-primary" type="button" disabled={processing || !flags.AUTO_PUBLISH || Boolean(blockedReason)} onClick={() => void processNext()}>
           <Wand2 size={16} />
-          Process Next
+          {processing ? 'Processing...' : 'Process Next'}
         </button>
       </PageHeader>
 
@@ -43,6 +64,7 @@ export function Automation() {
       <Card className="mt-5">
         <h2 className="font-semibold">Safe automation controls</h2>
         {blockedReason ? <p className="mt-2 rounded-md bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">{blockedReason}</p> : null}
+        {error ? <p className="mt-2 rounded-md bg-rose-50 p-3 text-sm text-rose-700 dark:bg-rose-950/40 dark:text-rose-200">{error}</p> : null}
         <div className="mt-4 flex flex-wrap gap-2">
           <button className="btn-secondary" type="button" onClick={() => void saveSettings({ ...settings, automation_paused: true })}><Pause size={16} />Pause automation</button>
           <button className="btn-secondary" type="button" onClick={() => void saveSettings({ ...settings, automation_paused: false, emergency_stop: false })}><Play size={16} />Resume automation</button>

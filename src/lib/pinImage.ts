@@ -16,9 +16,11 @@ export function downloadPinPng(pin: GeneratedPin, product?: Product) {
   if (!context) throw new Error('Canvas is not available in this browser.')
 
   drawPin(context, pin, product)
+  const dataUrl = canvas.toDataURL('image/png')
+  if (!dataUrl.startsWith('data:image/png')) throw new Error('PNG export failed.')
   const link = document.createElement('a')
-  link.href = canvas.toDataURL('image/png')
-  link.download = `${pin.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}.png`
+  link.href = dataUrl
+  link.download = `${safeFilename(pin.title)}.png`
   link.click()
 }
 
@@ -43,23 +45,23 @@ export function drawPin(context: CanvasRenderingContext2D, pin: GeneratedPin, pr
 
   context.fillStyle = text
   context.font = '700 54px Arial'
-  wrapText(context, product?.name ?? 'Affiliate product', 260, 340, 480, 62)
+  wrapText(context, product?.name ?? 'Affiliate product', 260, 340, 480, 62, 3)
 
   context.fillStyle = accent
   roundedRect(context, 90, 700, 260, 58, 29)
   context.fill()
   context.fillStyle = '#ffffff'
   context.font = '700 28px Arial'
-  context.fillText(product?.category ?? pin.style, 125, 739)
+  fitText(context, product?.category ?? pin.style, 125, 739, 205)
 
   context.fillStyle = text
   context.font = '800 76px Arial'
-  wrapText(context, pin.title, 90, 850, 820, 86)
+  wrapText(context, pin.title, 90, 850, 820, 86, 3)
 
   context.fillStyle = text
   context.globalAlpha = 0.78
   context.font = '400 38px Arial'
-  wrapText(context, pin.description, 90, 1130, 820, 48)
+  wrapText(context, pin.description, 90, 1130, 820, 48, 4)
   context.globalAlpha = 1
 
   context.fillStyle = accent
@@ -77,31 +79,48 @@ function wrapText(
   y: number,
   maxWidth: number,
   lineHeight: number,
+  maxLines = 6,
 ) {
   const words = text.split(' ')
   let line = ''
   let currentY = y
+  let lines = 1
 
   for (const word of words) {
     const testLine = line ? `${line} ${word}` : word
     if (context.measureText(testLine).width > maxWidth && line) {
-      context.fillText(line, x, currentY)
+      context.fillText(lines === maxLines ? truncateToWidth(context, `${line}...`, maxWidth) : line, x, currentY)
+      if (lines === maxLines) return
       line = word
       currentY += lineHeight
+      lines += 1
     } else {
       line = testLine
     }
   }
 
-  context.fillText(line, x, currentY)
+  context.fillText(truncateToWidth(context, line, maxWidth), x, currentY)
 }
 
 function centerText(context: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number) {
+  const output = truncateToWidth(context, text, maxWidth)
+  context.fillText(output, x - context.measureText(output).width / 2, y)
+}
+
+function fitText(context: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number) {
+  context.fillText(truncateToWidth(context, text, maxWidth), x, y)
+}
+
+function truncateToWidth(context: CanvasRenderingContext2D, text: string, maxWidth: number) {
   let output = text
   while (context.measureText(output).width > maxWidth && output.length > 8) {
-    output = output.slice(0, -2)
+    output = `${output.slice(0, -4)}...`
   }
-  context.fillText(output, x - context.measureText(output).width / 2, y)
+  return output
+}
+
+function safeFilename(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 80) || 'pinforge-pin'
 }
 
 function roundedRect(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {

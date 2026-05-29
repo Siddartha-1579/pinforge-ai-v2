@@ -39,7 +39,7 @@ export function Dashboard() {
 
       <section className="mt-6 grid gap-5 xl:grid-cols-2">
         <DashboardList title="Recent Products" link="/research" empty="Save product ideas from research.">
-          {products.slice(0, 4).map((product) => <Row key={product.id} title={product.name} meta={`${product.category} · ${product.virality_score}/100 virality`} />)}
+          {products.slice(0, 4).map((product) => <Row key={product.id} title={product.name} meta={`${product.category} - ${product.virality_score}/100 virality`} />)}
         </DashboardList>
         <DashboardList title="Upcoming Scheduled Pins" link="/calendar" empty="Schedule queue items on the calendar.">
           {scheduled.slice(0, 4).map((item) => {
@@ -48,7 +48,7 @@ export function Dashboard() {
           })}
         </DashboardList>
         <DashboardList title="Recent Sessions" link="/sessions" empty="Create upload sessions for batches.">
-          {sessions.slice(0, 4).map((session) => <Row key={session.id} title={session.name} meta={`${session.uploaded_count} uploaded · ${session.pending_count} pending`} status={session.status} />)}
+          {sessions.slice(0, 4).map((session) => <Row key={session.id} title={session.name} meta={`${session.uploaded_count} uploaded - ${session.pending_count} pending`} status={session.status} />)}
         </DashboardList>
         <Card>
           <div className="mb-4 flex items-center justify-between">

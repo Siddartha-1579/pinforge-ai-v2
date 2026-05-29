@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { Layout } from './components/Layout'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { AuthStartupWarning } from './components/AuthStartupWarning'
 import { AuthProvider } from './hooks/useAuth'
 import { Dashboard } from './pages/Dashboard'
 import { Analytics } from './pages/Analytics'
@@ -26,6 +27,7 @@ function App() {
     <ErrorBoundary>
       <BrowserRouter>
         <AuthProvider>
+          <AuthStartupWarning />
           <Routes>
             <Route path="/login" element={<Login mode="login" />} />
             <Route path="/signup" element={<Login mode="signup" />} />

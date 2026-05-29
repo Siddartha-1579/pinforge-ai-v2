@@ -13,6 +13,7 @@ export function Links() {
   const [url, setUrl] = useState('')
   const [notes, setNotes] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [busyId, setBusyId] = useState<string | null>(null)
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -33,8 +34,20 @@ export function Links() {
       setProductName('')
       setUrl('')
       setNotes('')
-    } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'Could not save affiliate link.')
+    } catch {
+      setError('Could not save affiliate link. Please try again.')
+    }
+  }
+
+  async function removeLink(id: string) {
+    setBusyId(id)
+    setError(null)
+    try {
+      await deleteLink(id)
+    } catch {
+      setError('Could not delete affiliate link. Please try again.')
+    } finally {
+      setBusyId(null)
     }
   }
 
@@ -81,7 +94,7 @@ export function Links() {
                     </div>
                     <div className="flex gap-2">
                       <button className="icon-btn" type="button" aria-label="Edit link" onClick={() => startEdit(link)}><Edit2 size={16} /></button>
-                      <button className="icon-btn" type="button" aria-label="Delete link" onClick={() => void deleteLink(link.id)}><Trash2 size={16} /></button>
+                      <button className="icon-btn" type="button" disabled={busyId === link.id} aria-label="Delete link" onClick={() => void removeLink(link.id)}><Trash2 size={16} /></button>
                     </div>
                   </div>
                 </div>

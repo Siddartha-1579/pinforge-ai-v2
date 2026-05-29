@@ -15,6 +15,7 @@ export function Queue() {
   const [selected, setSelected] = useState<string[]>([])
   const [scheduleDate, setScheduleDate] = useState('')
   const [page, setPage] = useState(1)
+  const [error, setError] = useState<string | null>(null)
   const pageSize = 10
 
   const rows = useMemo(() => queue.map((item) => {
@@ -32,7 +33,31 @@ export function Queue() {
 
   async function bulkSchedule() {
     if (!scheduleDate || selected.length === 0) return
-    await bulkUpdateQueue(selected, { scheduled_at: new Date(`${scheduleDate}T09:00:00`).toISOString(), status: 'Scheduled' })
+    setError(null)
+    try {
+      await bulkUpdateQueue(selected, { scheduled_at: new Date(`${scheduleDate}T09:00:00`).toISOString(), status: 'Scheduled' })
+    } catch {
+      setError('Could not schedule selected pins. Please try again.')
+    }
+  }
+
+  async function runBulkUpdate(nextStatus: PinStatus) {
+    setError(null)
+    try {
+      await bulkUpdateQueue(selected, { status: nextStatus })
+    } catch {
+      setError('Could not update selected pins. Please try again.')
+    }
+  }
+
+  async function removeSelected() {
+    setError(null)
+    try {
+      await deleteQueueItems(selected)
+      setSelected([])
+    } catch {
+      setError('Could not delete selected queue items. Please try again.')
+    }
   }
 
   return (
@@ -72,10 +97,11 @@ export function Queue() {
           <div className="mb-4 flex flex-wrap gap-2 rounded-md bg-slate-50 p-3 dark:bg-white/5">
             <input className="input max-w-44" type="date" value={scheduleDate} onChange={(event) => setScheduleDate(event.target.value)} />
             <button className="btn-secondary" type="button" onClick={() => void bulkSchedule()}>Schedule</button>
-            <button className="btn-secondary" type="button" onClick={() => void bulkUpdateQueue(selected, { status: 'Published' })}>Mark Published</button>
-            <button className="btn-secondary" type="button" onClick={() => void deleteQueueItems(selected)}><Trash2 size={16} />Delete</button>
+            <button className="btn-secondary" type="button" onClick={() => void runBulkUpdate('Published')}>Mark Published</button>
+            <button className="btn-secondary" type="button" onClick={() => void removeSelected()}><Trash2 size={16} />Delete</button>
           </div>
         ) : null}
+        {error ? <p className="mb-4 text-sm text-rose-600">{error}</p> : null}
 
         {rows.length === 0 ? <EmptyState title="No queue results" description="Try a different search or generate pins to populate the queue." /> : (
           <div className="overflow-x-auto">

@@ -8,17 +8,27 @@ import { useAppData } from '../hooks/useAppData'
 export function Sessions() {
   const { sessions, pins, saveSession, updateSession } = useAppData()
   const [name, setName] = useState('Weekly Pinterest batch')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function createSession(event: FormEvent) {
     event.preventDefault()
-    const pendingPins = pins.filter((pin) => pin.status !== 'Published').slice(0, 20)
-    await saveSession({
-      name,
-      status: 'Active',
-      pin_ids: pendingPins.map((pin) => pin.id),
-      uploaded_count: 0,
-      pending_count: pendingPins.length,
-    })
+    setBusy(true)
+    setError(null)
+    try {
+      const pendingPins = pins.filter((pin) => pin.status !== 'Published').slice(0, 20)
+      await saveSession({
+        name,
+        status: 'Active',
+        pin_ids: pendingPins.map((pin) => pin.id),
+        uploaded_count: 0,
+        pending_count: pendingPins.length,
+      })
+    } catch {
+      setError('Could not create upload session. Please try again.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -27,8 +37,9 @@ export function Sessions() {
       <Card>
         <form className="flex flex-col gap-3 md:flex-row" onSubmit={createSession}>
           <input className="input" value={name} onChange={(event) => setName(event.target.value)} />
-          <button className="btn-primary" type="submit"><Play size={16} />Start Session</button>
+          <button className="btn-primary" type="submit" disabled={busy}><Play size={16} />{busy ? 'Starting...' : 'Start Session'}</button>
         </form>
+        {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
       </Card>
 
       <section className="mt-6 grid gap-4 lg:grid-cols-2">

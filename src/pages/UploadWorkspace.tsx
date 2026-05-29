@@ -4,6 +4,7 @@ import { Card, EmptyState, PageHeader } from '../components/ui'
 import { PinCanvas } from '../components/PinCanvas'
 import { StatusBadge } from '../components/StatusBadge'
 import { useAppData } from '../hooks/useAppData'
+import { validatePinForUpload } from '../lib/pinValidation'
 import type { GeneratedPin, PinStatus } from '../types'
 
 export function UploadWorkspace() {
@@ -29,6 +30,7 @@ export function UploadWorkspace() {
           {pins.map((pin) => {
             const product = products.find((item) => item.id === pin.product_id)
             const link = links.find((item) => item.id === pin.affiliate_link_id || item.product_id === pin.product_id)
+            const validation = validatePinForUpload(pin, product, link)
 
             return (
               <Card key={pin.id}>
@@ -38,12 +40,20 @@ export function UploadWorkspace() {
                 </div>
                 <PinCanvas pin={pin} product={product} />
                 <div className="mt-4 space-y-3">
+                  {!validation.ok ? (
+                    <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-100">
+                      <p className="font-medium">Fix before upload</p>
+                      <ul className="mt-2 space-y-1">
+                        {validation.messages.map((message) => <li key={message}>{message}</li>)}
+                      </ul>
+                    </div>
+                  ) : null}
                   <CopyRow label="Title" value={pin.title} onCopy={copy} />
                   <CopyRow label="Description" value={pin.description} onCopy={copy} />
                   <CopyRow label="Affiliate link" value={link?.url ?? 'No affiliate link connected'} onCopy={copy} />
                   <WorkflowForm pin={pin} onSave={(updates) => updatePinWorkflow(pin.id, updates)} />
                   <div className="grid gap-2 sm:grid-cols-2">
-                    <button className="btn-secondary" type="button" onClick={() => void markPinUploaded(pin.id)}>
+                    <button className="btn-secondary" type="button" disabled={!validation.ok} onClick={() => void markPinUploaded(pin.id)}>
                       <CheckCircle2 size={16} />
                       Mark Published
                     </button>

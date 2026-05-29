@@ -4,6 +4,10 @@ const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.t
 const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim()
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
+export const supabaseConfig = {
+  url: supabaseUrl ?? null,
+  anonKey: supabaseAnonKey ?? null,
+}
 export const supabaseDiagnostics = {
   urlPresent: Boolean(supabaseUrl),
   keyPresent: Boolean(supabaseAnonKey),
@@ -13,7 +17,7 @@ export const supabaseDiagnostics = {
 }
 
 if (!isSupabaseConfigured) {
-  console.error('Supabase environment variables are missing. Authentication is disabled until Vercel env vars are configured.')
+  console.warn('Supabase environment variables are missing. Authentication is disabled until Vercel env vars are configured.')
 } else {
   console.info('Supabase diagnostics', {
     urlPresent: supabaseDiagnostics.urlPresent,

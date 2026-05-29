@@ -1,5 +1,6 @@
 import { Activity, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { AuthHealth } from '../components/AuthHealth'
+import { FunctionHealth } from '../components/FunctionHealth'
 import { Card, PageHeader } from '../components/ui'
 import { useAppData } from '../hooks/useAppData'
 import { getFeatureFlags } from '../lib/featureFlags'
@@ -73,6 +74,10 @@ export function Diagnostics() {
 
       <section className="mt-5">
         <AuthHealth />
+      </section>
+
+      <section className="mt-5">
+        <FunctionHealth />
       </section>
 
       <section className="mt-5 grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">

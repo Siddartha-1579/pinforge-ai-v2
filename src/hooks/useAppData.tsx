@@ -5,6 +5,18 @@ import { defaultSettings, demoEvents, demoLinks, demoPins, demoPinterestAccounts
 import type { AffiliateLink, AnalyticsEvent, GeneratedPin, PinterestAccount, PinQueueItem, PinStatus, Product, PublishingJob, TrendIntelligence, UploadLog, UploadSession, UserSettings } from '../types'
 import { useAuth } from './useAuth'
 
+export type WorkspaceStatus = 'Connected' | 'Partially Connected' | 'Demo Mode' | 'Database Error'
+
+export interface WorkspaceQueryDiagnostic {
+  table: string
+  ok: boolean
+  status: number | null
+  code: string | null
+  message: string | null
+  details: string | null
+  hint: string | null
+}
+
 interface AppDataContextValue {
   products: Product[]
   links: AffiliateLink[]
@@ -19,6 +31,8 @@ interface AppDataContextValue {
   settings: UserSettings
   loading: boolean
   error: string | null
+  workspaceStatus: WorkspaceStatus
+  workspaceDiagnostics: WorkspaceQueryDiagnostic[]
   refresh: () => Promise<void>
   saveProduct: (product: Product) => Promise<void>
   deleteProduct: (id: string) => Promise<void>
@@ -58,6 +72,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<UserSettings>(defaultSettings)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [workspaceStatus, setWorkspaceStatus] = useState<WorkspaceStatus>('Demo Mode')
+  const [workspaceDiagnostics, setWorkspaceDiagnostics] = useState<WorkspaceQueryDiagnostic[]>([])
 
   const refresh = useCallback(async () => {
     if (!user) {
@@ -72,6 +88,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       setUploadLogs([])
       setTrendHistory([])
       setSettings(defaultSettings)
+      setWorkspaceStatus('Demo Mode')
+      setWorkspaceDiagnostics([])
       setLoading(false)
       return
     }
@@ -80,31 +98,52 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setError(null)
 
     try {
-      const [productsResult, linksResult, pinsResult, queueResult, sessionsResult, eventsResult, accountsResult, jobsResult, logsResult, trendsResult, settingsResult] = await Promise.all([
-        supabase.from('products').select('*').order('created_at', { ascending: false }).limit(100),
-        supabase.from('affiliate_links').select('*').order('created_at', { ascending: false }).limit(100),
-        supabase.from('generated_pins').select('*').order('created_at', { ascending: false }).limit(100),
-        supabase.from('pin_queue').select('*').order('scheduled_at', { ascending: true, nullsFirst: false }).limit(200),
-        supabase.from('upload_sessions').select('*').order('created_at', { ascending: false }).limit(50),
-        supabase.from('analytics_events').select('*').order('created_at', { ascending: false }).limit(300),
-        supabase.from('pinterest_accounts').select('*').order('created_at', { ascending: false }).limit(5),
-        supabase.from('publishing_jobs').select('*').order('created_at', { ascending: false }).limit(100),
-        supabase.from('upload_logs').select('*').order('created_at', { ascending: false }).limit(100),
-        supabase.from('trend_intelligence').select('*').order('created_at', { ascending: false }).limit(100),
-        supabase.from('user_settings').select('*').maybeSingle(),
+      const results = await Promise.all([
+        loadWorkspaceTable('products', supabase.from('products').select('*').order('created_at', { ascending: false }).limit(100)),
+        loadWorkspaceTable('affiliate_links', supabase.from('affiliate_links').select('*').order('created_at', { ascending: false }).limit(100)),
+        loadWorkspaceTable('generated_pins', supabase.from('generated_pins').select('*').order('created_at', { ascending: false }).limit(100)),
+        loadWorkspaceTable('pin_queue', supabase.from('pin_queue').select('*').order('scheduled_at', { ascending: true, nullsFirst: false }).limit(200)),
+        loadWorkspaceTable('upload_sessions', supabase.from('upload_sessions').select('*').order('created_at', { ascending: false }).limit(50)),
+        loadWorkspaceTable('analytics_events', supabase.from('analytics_events').select('*').order('created_at', { ascending: false }).limit(300)),
+        loadWorkspaceTable('pinterest_accounts', supabase.from('pinterest_accounts').select('*').order('created_at', { ascending: false }).limit(5)),
+        loadWorkspaceTable('publishing_jobs', supabase.from('publishing_jobs').select('*').order('created_at', { ascending: false }).limit(100)),
+        loadWorkspaceTable('upload_logs', supabase.from('upload_logs').select('*').order('created_at', { ascending: false }).limit(100)),
+        loadWorkspaceTable('trend_intelligence', supabase.from('trend_intelligence').select('*').order('created_at', { ascending: false }).limit(100)),
+        loadWorkspaceTable('user_settings', supabase.from('user_settings').select('*').maybeSingle()),
       ])
 
-      if (productsResult.error) throw productsResult.error
-      if (linksResult.error) throw linksResult.error
-      if (pinsResult.error) throw pinsResult.error
-      if (queueResult.error) throw queueResult.error
-      if (sessionsResult.error) throw sessionsResult.error
-      if (eventsResult.error) throw eventsResult.error
-      if (accountsResult.error) throw accountsResult.error
-      if (jobsResult.error) throw jobsResult.error
-      if (logsResult.error) throw logsResult.error
-      if (trendsResult.error) throw trendsResult.error
-      if (settingsResult.error) throw settingsResult.error
+      const diagnostics = results.map((result) => result.diagnostic)
+      const failedResults = results.filter((result) => !result.diagnostic.ok)
+      setWorkspaceDiagnostics(diagnostics)
+
+      if (failedResults.length > 0) {
+        console.warn('Workspace query failures.', diagnostics.filter((item) => !item.ok))
+        setWorkspaceStatus(failedResults.length === results.length ? 'Demo Mode' : 'Partially Connected')
+        setError(
+          failedResults.length === results.length
+            ? 'Database tables are not available. Showing demo data so you can keep working.'
+            : `Some workspace tables failed to load: ${failedResults.map((result) => result.diagnostic.table).join(', ')}.`,
+        )
+      } else {
+        setWorkspaceStatus('Connected')
+      }
+
+      if (failedResults.length === results.length) {
+        setProducts(demoProducts)
+        setLinks(demoLinks)
+        setPins(demoPins)
+        setQueue(demoQueue)
+        setSessions(demoSessions)
+        setEvents(demoEvents)
+        setPinterestAccounts(demoPinterestAccounts)
+        setPublishingJobs(demoPublishingJobs)
+        setUploadLogs(demoUploadLogs)
+        setTrendHistory(demoTrendHistory)
+        setSettings(defaultSettings)
+        return
+      }
+
+      const [productsResult, linksResult, pinsResult, queueResult, sessionsResult, eventsResult, accountsResult, jobsResult, logsResult, trendsResult, settingsResult] = results
 
       setProducts(productsResult.data ?? [])
       setLinks(linksResult.data ?? [])
@@ -119,6 +158,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       setSettings(settingsResult.data ?? defaultSettings)
     } catch (nextError) {
       console.warn('Workspace load failed.', nextError)
+      setWorkspaceStatus('Database Error')
+      setWorkspaceDiagnostics([])
       setError('Could not load your workspace. Showing demo data so you can keep working.')
       setProducts(demoProducts)
       setLinks(demoLinks)
@@ -157,6 +198,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       settings,
       loading,
       error,
+      workspaceStatus,
+      workspaceDiagnostics,
       refresh,
       async saveProduct(product) {
         const payload = { ...product, id: product.id ?? crypto.randomUUID(), user_id: user?.id }
@@ -317,10 +360,28 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         if (saveError) throw saveError
       },
     }),
-    [error, events, links, loading, pins, pinterestAccounts, products, publishingJobs, queue, refresh, sessions, settings, trendHistory, uploadLogs, user],
+    [error, events, links, loading, pins, pinterestAccounts, products, publishingJobs, queue, refresh, sessions, settings, trendHistory, uploadLogs, user, workspaceDiagnostics, workspaceStatus],
   )
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>
+}
+
+async function loadWorkspaceTable<T>(table: string, query: PromiseLike<{ data: T | null; error: { code?: string; message: string; details?: string | null; hint?: string | null } | null; status?: number }>) {
+  const result = await query
+
+  return {
+    table,
+    data: result.data,
+    diagnostic: {
+      table,
+      ok: !result.error,
+      status: result.status ?? null,
+      code: result.error?.code ?? null,
+      message: result.error?.message ?? null,
+      details: result.error?.details ?? null,
+      hint: result.error?.hint ?? null,
+    } satisfies WorkspaceQueryDiagnostic,
+  }
 }
 
 export function useAppData() {

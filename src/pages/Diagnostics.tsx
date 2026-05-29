@@ -5,7 +5,7 @@ import { useAppData } from '../hooks/useAppData'
 import { getFeatureFlags } from '../lib/featureFlags'
 
 export function Diagnostics() {
-  const { queue, publishingJobs, uploadLogs, pinterestAccounts, settings, error, events } = useAppData()
+  const { queue, publishingJobs, uploadLogs, pinterestAccounts, settings, error, events, workspaceStatus, workspaceDiagnostics } = useAppData()
   const flags = getFeatureFlags(settings)
   const failures = uploadLogs.filter((log) => log.level === 'error').slice(0, 6)
   const connected = pinterestAccounts.some((account) => account.connected)
@@ -27,6 +27,43 @@ export function Diagnostics() {
       <section className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {dashboard.map((item) => <HealthStatus key={item.label} label={item.label} status={item.status} message={item.message} />)}
       </section>
+      <Card className="mb-5">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-rose-600">Workspace Status</p>
+            <h2 className="mt-1 font-semibold">{workspaceStatus}</h2>
+          </div>
+          <span className={`rounded-full px-2 py-1 text-xs font-semibold uppercase ${workspaceStatusClass(workspaceStatus)}`}>{workspaceStatus}</span>
+        </div>
+        {workspaceDiagnostics.length === 0 ? (
+          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">No workspace table diagnostics have run yet.</p>
+        ) : (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[760px] text-left text-sm">
+              <thead className="text-xs uppercase text-slate-500 dark:text-slate-400">
+                <tr>
+                  <th className="p-3">Table</th>
+                  <th className="p-3">HTTP</th>
+                  <th className="p-3">Code</th>
+                  <th className="p-3">Result</th>
+                  <th className="p-3">Supabase error</th>
+                </tr>
+              </thead>
+              <tbody>
+                {workspaceDiagnostics.map((item) => (
+                  <tr key={item.table} className="border-t border-slate-200 dark:border-white/10">
+                    <td className="p-3 font-medium">{item.table}</td>
+                    <td className="p-3">{item.status ?? '-'}</td>
+                    <td className="p-3">{item.code ?? '-'}</td>
+                    <td className="p-3">{item.ok ? 'Loaded' : 'Failed'}</td>
+                    <td className="p-3">{item.message ?? '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <HealthCard label="Function health" ok message="Edge functions configured as optional safe fallbacks." />
         <HealthCard label="Queue health" ok={queueHealth} message={`${queue.length} queue items tracked.`} />
@@ -64,6 +101,12 @@ export function Diagnostics() {
       </section>
     </>
   )
+}
+
+function workspaceStatusClass(status: string) {
+  if (status === 'Connected') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200'
+  if (status === 'Partially Connected') return 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-100'
+  return 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-200'
 }
 
 function HealthStatus({ label, status, message }: { label: string; status: 'green' | 'yellow' | 'red'; message: string }) {

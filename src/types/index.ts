@@ -12,6 +12,7 @@ export type PinStatus = 'Draft' | 'Ready' | 'Scheduled' | 'Published' | 'Failed'
 export type SessionStatus = 'Active' | 'Completed' | 'Archived'
 export type PublishingStatus = 'Pending' | 'Processing' | 'Published' | 'Failed' | 'Retrying'
 export type QueuePriority = 'Oldest First' | 'Newest First' | 'Highest Affiliate Potential'
+export type AffiliateNetwork = 'Amazon' | 'ClickBank' | 'Impact' | 'CJ' | 'ShareASale' | 'Digistore24' | 'Other'
 
 export interface Product {
   id: string
@@ -24,6 +25,12 @@ export interface Product {
   affiliate_potential: number
   trend_reasoning: string
   target_audience: string
+  affiliate_url?: string | null
+  affiliate_network?: AffiliateNetwork | null
+  short_description?: string | null
+  benefits?: string[] | null
+  keywords?: string[] | null
+  hashtags?: string[] | null
   created_at?: string
 }
 
@@ -32,7 +39,7 @@ export interface AffiliateLink {
   user_id?: string
   product_id?: string | null
   product_name: string
-  network: 'Amazon' | 'Other'
+  network: AffiliateNetwork
   url: string
   notes?: string | null
   created_at?: string

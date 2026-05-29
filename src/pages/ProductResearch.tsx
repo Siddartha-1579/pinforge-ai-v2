@@ -3,17 +3,20 @@ import type { FormEvent } from 'react'
 import { Edit2, Save, Sparkles, Trash2, X } from 'lucide-react'
 import { PageHeader, Card, ScoreBar, Skeleton } from '../components/ui'
 import { useAppData } from '../hooks/useAppData'
+import { importProductFromAffiliateUrl } from '../lib/affiliateImport'
 import { discoverProducts } from '../lib/ai'
 import { getFeatureFlags } from '../lib/featureFlags'
 import type { Product } from '../types'
 
 export function ProductResearch() {
-  const { saveProduct, deleteProduct, saveTrendHistory, settings, products } = useAppData()
+  const { saveProduct, saveLink, deleteProduct, saveTrendHistory, settings, products } = useAppData()
   const [query, setQuery] = useState('home office upgrades')
+  const [affiliateUrl, setAffiliateUrl] = useState('')
   const [results, setResults] = useState<Product[]>(products)
   const [competition, setCompetition] = useState<'All' | Product['competition_level']>('All')
   const [editing, setEditing] = useState<Product | null>(null)
   const [loading, setLoading] = useState(false)
+  const [importing, setImporting] = useState(false)
   const [savingId, setSavingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const visibleProducts = results.length > 0 ? results : products
@@ -41,6 +44,30 @@ export function ProductResearch() {
       setError('Product discovery failed. Please try again.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleAffiliateImport(event: FormEvent) {
+    event.preventDefault()
+    setImporting(true)
+    setError(null)
+
+    try {
+      const product = importProductFromAffiliateUrl(affiliateUrl)
+      await saveProduct(product)
+      await saveLink({
+        product_id: product.id,
+        product_name: product.name,
+        network: product.affiliate_network ?? 'Other',
+        url: product.affiliate_url ?? affiliateUrl,
+        notes: 'Imported from Research intake.',
+      })
+      setResults((current) => [product, ...current.filter((item) => item.id !== product.id)])
+      setAffiliateUrl('')
+    } catch {
+      setError('Could not import this affiliate link. Check the URL and try again.')
+    } finally {
+      setImporting(false)
     }
   }
 
@@ -74,6 +101,13 @@ export function ProductResearch() {
     <>
       <PageHeader title="Product Research" eyebrow="AI discovery" />
       <Card>
+        <form className="mb-4 flex flex-col gap-3 md:flex-row" onSubmit={handleAffiliateImport}>
+          <input className="input" value={affiliateUrl} onChange={(event) => setAffiliateUrl(event.target.value)} placeholder="Paste Amazon, ClickBank, Impact, CJ, ShareASale, or Digistore24 affiliate link" />
+          <button className="btn-primary md:w-auto" type="submit" disabled={importing || !affiliateUrl.trim()}>
+            <Save size={16} />
+            {importing ? 'Importing...' : 'Import Affiliate Link'}
+          </button>
+        </form>
         <form className="flex flex-col gap-3 md:flex-row" onSubmit={handleSearch}>
           <input className="input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Try: tiny apartment organization, wellness desk setup" />
           <button className="btn-primary md:w-auto" type="submit" disabled={loading}>
@@ -111,6 +145,10 @@ export function ProductResearch() {
                       <p className="font-medium">Competition: {product.competition_level}</p>
                       <p className="mt-2 text-slate-600 dark:text-slate-300">{product.trend_reasoning}</p>
                       <p className="mt-2 text-slate-500 dark:text-slate-400">Audience: {product.target_audience}</p>
+                      {product.affiliate_url ? <p className="mt-2 break-words text-slate-500 dark:text-slate-400">Affiliate URL: {product.affiliate_url}</p> : null}
+                      {product.short_description ? <p className="mt-2 text-slate-600 dark:text-slate-300">{product.short_description}</p> : null}
+                      {product.keywords?.length ? <p className="mt-2 text-slate-500 dark:text-slate-400">Keywords: {product.keywords.join(', ')}</p> : null}
+                      {product.hashtags?.length ? <p className="mt-2 text-slate-500 dark:text-slate-400">Hashtags: {product.hashtags.join(' ')}</p> : null}
                     </div>
                   </>
                 )}
@@ -148,6 +186,8 @@ function ProductEditor({ product, onChange }: { product: Product; onChange: (pro
       </select>
       <textarea className="input min-h-24" value={product.trend_reasoning} onChange={(event) => onChange({ ...product, trend_reasoning: event.target.value })} />
       <textarea className="input min-h-20" value={product.target_audience} onChange={(event) => onChange({ ...product, target_audience: event.target.value })} />
+      <input className="input" value={product.affiliate_url ?? ''} onChange={(event) => onChange({ ...product, affiliate_url: event.target.value })} placeholder="Affiliate URL" />
+      <textarea className="input min-h-20" value={product.short_description ?? ''} onChange={(event) => onChange({ ...product, short_description: event.target.value })} placeholder="Short description" />
     </div>
   )
 }

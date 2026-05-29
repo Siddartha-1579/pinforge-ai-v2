@@ -20,6 +20,10 @@ export async function discoverProducts(query: string, settings?: UserSettings): 
     id: crypto.randomUUID(),
     name: index === 0 ? `${topic} starter pick` : product.name,
     trend_reasoning: `${product.trend_reasoning} Search seed: ${topic}.`,
+    short_description: product.short_description ?? `${product.name} is a Pinterest-friendly affiliate product idea.`,
+    benefits: product.benefits ?? ['Practical recommendation', 'Clear shopping intent', 'Save-worthy content angle'],
+    keywords: product.keywords ?? topic.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 6),
+    hashtags: product.hashtags ?? topic.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 6).map((word) => `#${word.replace(/[^a-z0-9]/g, '')}`),
   }))
 }
 
@@ -42,7 +46,7 @@ export async function generatePinCopy(
   return pinStyles.slice(0, count).map((style) => ({
     style,
     title: titleForStyle(product.name, style),
-    description: `${product.name} helps ${product.target_audience.toLowerCase()} solve a real daily problem with a practical, save-worthy upgrade.`,
+    description: product.short_description ?? `${product.name} helps ${product.target_audience.toLowerCase()} solve a real daily problem with a practical, save-worthy upgrade.`,
     cta: settings.cta_preferences.split(',')[0]?.trim() || 'Save this idea',
     emotional_trigger: 'Make the next step feel simple, useful, and worth remembering.',
     marketing_angle: `Problem-solution angle for ${product.category.toLowerCase()} shoppers`,

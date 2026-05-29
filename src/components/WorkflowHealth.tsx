@@ -9,6 +9,7 @@ export function WorkflowHealth() {
   const checks = useMemo(() => {
     const productIds = new Set(products.map((product) => product.id))
     const linkById = new Map(links.map((link) => [link.id, link]))
+    const productsWithAffiliateUrls = products.filter((product) => product.affiliate_url)
     const pinsWithLinks = pins.filter((pin) => pin.affiliate_link_id || pin.affiliate_url)
     const queueWithPins = queue.filter((item) => pins.some((pin) => pin.id === item.pin_id))
     const queueWithLinks = queue.filter((item) => item.affiliate_link_id || item.affiliate_url)
@@ -16,12 +17,12 @@ export function WorkflowHealth() {
     return [
       {
         label: 'Research -> Generator',
-        status: products.length > 0 && products.every((product) => productIds.has(product.id)) ? 'PASS' as const : 'FAIL' as const,
-        message: products.length > 0 ? `${products.length} saved products available to Generator.` : 'No saved products available.',
+        status: products.length > 0 && products.every((product) => productIds.has(product.id)) && productsWithAffiliateUrls.length > 0 ? 'PASS' as const : 'FAIL' as const,
+        message: products.length > 0 ? `${products.length} saved products available to Generator; ${productsWithAffiliateUrls.length} include affiliate URLs.` : 'No saved products available.',
       },
       {
         label: 'Generator -> Affiliate Link',
-        status: pinsWithLinks.length > 0 && pinsWithLinks.every((pin) => pin.affiliate_url || (pin.affiliate_link_id && linkById.has(pin.affiliate_link_id))) ? 'PASS' as const : 'FAIL' as const,
+        status: pinsWithLinks.length > 0 && pinsWithLinks.every((pin) => pin.affiliate_url || products.find((product) => product.id === pin.product_id)?.affiliate_url || (pin.affiliate_link_id && linkById.has(pin.affiliate_link_id))) ? 'PASS' as const : 'FAIL' as const,
         message: pinsWithLinks.length > 0 ? `${pinsWithLinks.length} generated pins have affiliate link metadata.` : 'No generated pins have affiliate link metadata.',
       },
       {
@@ -31,7 +32,7 @@ export function WorkflowHealth() {
       },
       {
         label: 'Queue -> Publishing',
-        status: queueWithLinks.length > 0 && queueWithLinks.every((item) => item.affiliate_url || (item.affiliate_link_id && linkById.has(item.affiliate_link_id))) ? 'PASS' as const : 'FAIL' as const,
+        status: queueWithLinks.length > 0 && queueWithLinks.every((item) => item.affiliate_url || products.find((product) => product.id === item.product_id)?.affiliate_url || (item.affiliate_link_id && linkById.has(item.affiliate_link_id))) ? 'PASS' as const : 'FAIL' as const,
         message: `${queueWithLinks.length}/${queue.length} queue items carry affiliate link metadata. ${publishingJobs.length} publishing jobs recorded.`,
       },
     ]

@@ -18,6 +18,7 @@ export function Generator() {
   const activeProductId = productId || products[0]?.id || ''
   const product = products.find((item) => item.id === activeProductId)
   const affiliateLink = product ? links.find((link) => link.product_id === product.id) : null
+  const affiliateUrl = product?.affiliate_url ?? affiliateLink?.url ?? null
 
   async function handleGenerate(event: FormEvent) {
     event.preventDefault()
@@ -32,7 +33,7 @@ export function Generator() {
         id: crypto.randomUUID(),
         product_id: product.id,
         affiliate_link_id: affiliateLink?.id ?? null,
-        affiliate_url: affiliateLink?.url ?? null,
+        affiliate_url: affiliateUrl,
         uploaded: false,
         status: 'Ready' as const,
       }))
@@ -63,7 +64,7 @@ export function Generator() {
             {loading ? 'Generating...' : 'Generate'}
           </button>
         </form>
-        {product && !affiliateLink ? <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">Add an affiliate URL for this product before publishing.</p> : null}
+        {product && !affiliateUrl ? <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">Import an affiliate URL for this product before publishing.</p> : null}
         {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
       </Card>
 
@@ -81,7 +82,7 @@ export function Generator() {
                 <h2 className="text-lg font-semibold">{pin.title}</h2>
                 <p className="text-sm text-slate-600 dark:text-slate-300">{pin.description}</p>
                 <p className="text-sm"><strong>CTA:</strong> {pin.cta}</p>
-                <p className="break-words text-sm"><strong>Affiliate URL:</strong> {pin.affiliate_url ?? links.find((link) => link.id === pin.affiliate_link_id)?.url ?? affiliateLink?.url ?? 'Missing'}</p>
+                <p className="break-words text-sm"><strong>Affiliate URL:</strong> {pin.affiliate_url ?? links.find((link) => link.id === pin.affiliate_link_id)?.url ?? affiliateUrl ?? 'Missing'}</p>
                 <p className="text-sm"><strong>Trigger:</strong> {pin.emotional_trigger}</p>
                 <p className="text-sm"><strong>Angle:</strong> {pin.marketing_angle}</p>
               </div>

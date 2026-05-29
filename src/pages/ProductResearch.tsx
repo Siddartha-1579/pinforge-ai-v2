@@ -53,7 +53,7 @@ export function ProductResearch() {
     setError(null)
 
     try {
-      const product = importProductFromAffiliateUrl(affiliateUrl)
+      const product = await importProductFromAffiliateUrl(affiliateUrl)
       await saveProduct(product)
       await saveLink({
         product_id: product.id,
@@ -146,7 +146,10 @@ export function ProductResearch() {
                       <p className="mt-2 text-slate-600 dark:text-slate-300">{product.trend_reasoning}</p>
                       <p className="mt-2 text-slate-500 dark:text-slate-400">Audience: {product.target_audience}</p>
                       {product.affiliate_url ? <p className="mt-2 break-words text-slate-500 dark:text-slate-400">Affiliate URL: {product.affiliate_url}</p> : null}
+                      {product.resolved_url && product.resolved_url !== product.affiliate_url ? <p className="mt-2 break-words text-slate-500 dark:text-slate-400">Resolved URL: {product.resolved_url}</p> : null}
                       {product.short_description ? <p className="mt-2 text-slate-600 dark:text-slate-300">{product.short_description}</p> : null}
+                      {product.brand ? <p className="mt-2 text-slate-500 dark:text-slate-400">Brand: {product.brand}</p> : null}
+                      {product.features?.length ? <p className="mt-2 text-slate-500 dark:text-slate-400">Features: {product.features.join(', ')}</p> : null}
                       {product.keywords?.length ? <p className="mt-2 text-slate-500 dark:text-slate-400">Keywords: {product.keywords.join(', ')}</p> : null}
                       {product.hashtags?.length ? <p className="mt-2 text-slate-500 dark:text-slate-400">Hashtags: {product.hashtags.join(' ')}</p> : null}
                     </div>
@@ -187,7 +190,14 @@ function ProductEditor({ product, onChange }: { product: Product; onChange: (pro
       <textarea className="input min-h-24" value={product.trend_reasoning} onChange={(event) => onChange({ ...product, trend_reasoning: event.target.value })} />
       <textarea className="input min-h-20" value={product.target_audience} onChange={(event) => onChange({ ...product, target_audience: event.target.value })} />
       <input className="input" value={product.affiliate_url ?? ''} onChange={(event) => onChange({ ...product, affiliate_url: event.target.value })} placeholder="Affiliate URL" />
+      <input className="input" value={product.resolved_url ?? ''} onChange={(event) => onChange({ ...product, resolved_url: event.target.value })} placeholder="Resolved URL" />
+      <input className="input" value={product.brand ?? ''} onChange={(event) => onChange({ ...product, brand: event.target.value })} placeholder="Brand" />
+      <input className="input" value={product.product_image_url ?? ''} onChange={(event) => onChange({ ...product, product_image_url: event.target.value })} placeholder="Product image URL" />
       <textarea className="input min-h-20" value={product.short_description ?? ''} onChange={(event) => onChange({ ...product, short_description: event.target.value })} placeholder="Short description" />
+      <textarea className="input min-h-20" value={product.features?.join('\n') ?? ''} onChange={(event) => onChange({ ...product, features: event.target.value.split('\n').map((item) => item.trim()).filter(Boolean) })} placeholder="Features, one per line" />
+      <textarea className="input min-h-20" value={product.benefits?.join('\n') ?? ''} onChange={(event) => onChange({ ...product, benefits: event.target.value.split('\n').map((item) => item.trim()).filter(Boolean) })} placeholder="Benefits, one per line" />
+      <input className="input" value={product.keywords?.join(', ') ?? ''} onChange={(event) => onChange({ ...product, keywords: event.target.value.split(',').map((item) => item.trim()).filter(Boolean) })} placeholder="Keywords" />
+      <input className="input" value={product.hashtags?.join(' ') ?? ''} onChange={(event) => onChange({ ...product, hashtags: event.target.value.split(/\s+/).map((item) => item.trim()).filter(Boolean) })} placeholder="Hashtags" />
     </div>
   )
 }

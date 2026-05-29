@@ -27,10 +27,15 @@ export interface Product {
   target_audience: string
   affiliate_url?: string | null
   affiliate_network?: AffiliateNetwork | null
+  import_source_url?: string | null
+  resolved_url?: string | null
   short_description?: string | null
+  brand?: string | null
+  features?: string[] | null
   benefits?: string[] | null
   keywords?: string[] | null
   hashtags?: string[] | null
+  product_image_url?: string | null
   created_at?: string
 }
 
@@ -57,6 +62,8 @@ export interface GeneratedPin {
   cta: string
   emotional_trigger: string
   marketing_angle: string
+  keywords?: string[] | null
+  hashtags?: string[] | null
   image_data_url?: string | null
   uploaded: boolean
   status?: PinStatus
@@ -91,6 +98,8 @@ export interface PinCopy {
   cta: string
   emotional_trigger: string
   marketing_angle: string
+  keywords?: string[]
+  hashtags?: string[]
 }
 
 export interface PinQueueItem {

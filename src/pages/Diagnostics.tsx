@@ -1,5 +1,6 @@
 import { Activity, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { AuthHealth } from '../components/AuthHealth'
+import { CoreEngineHealth } from '../components/CoreEngineHealth'
 import { FunctionHealth } from '../components/FunctionHealth'
 import { WorkflowHealth } from '../components/WorkflowHealth'
 import { Card, PageHeader } from '../components/ui'
@@ -79,6 +80,10 @@ export function Diagnostics() {
 
       <section className="mt-5">
         <FunctionHealth />
+      </section>
+
+      <section className="mt-5">
+        <CoreEngineHealth />
       </section>
 
       <section className="mt-5">

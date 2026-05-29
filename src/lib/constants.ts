@@ -43,6 +43,14 @@ export const demoProducts: Product[] = [
     trend_reasoning:
       'Work-from-home buyers are saving compact wellness upgrades that solve sedentary routines.',
     target_audience: 'Remote workers, productivity creators, apartment dwellers',
+    affiliate_url: 'https://amazon.com/example-walking-pad?tag=yourtag-20',
+    affiliate_network: 'Amazon',
+    short_description: 'A compact walking pad that helps remote workers add movement under a standing desk.',
+    brand: 'DeskFit',
+    features: ['Foldable frame', 'Under-desk profile', 'Quiet walking speed'],
+    benefits: ['Adds movement to work blocks', 'Stores easily in apartments', 'Pairs well with home office content'],
+    keywords: ['walking pad', 'home office', 'standing desk', 'compact fitness'],
+    hashtags: ['#walkingpad', '#homeoffice', '#standingdesk', '#compactfitness'],
   },
   {
     id: 'demo-2',
@@ -55,6 +63,12 @@ export const demoProducts: Product[] = [
     trend_reasoning:
       'Cafe-at-home content performs well because it is visual, affordable, and easy to recreate.',
     target_audience: 'Coffee lovers, college students, budget lifestyle shoppers',
+    short_description: 'An affordable frother set for cafe-style drinks at home.',
+    brand: 'CafeHome',
+    features: ['Cordless whisk', 'Compact stand', 'Easy-rinse head'],
+    benefits: ['Makes drinks more visual', 'Fits budget gift guides', 'Easy to explain in pins'],
+    keywords: ['milk frother', 'coffee', 'kitchen', 'cafe at home'],
+    hashtags: ['#milkfrother', '#coffee', '#kitchen', '#cafeathome'],
   },
   {
     id: 'demo-3',
@@ -67,6 +81,12 @@ export const demoProducts: Product[] = [
     trend_reasoning:
       'Before-and-after organization pins keep strong save intent despite crowded competition.',
     target_audience: 'Renters, beauty enthusiasts, pantry organization audiences',
+    short_description: 'Clear drawer organizers for tidy beauty, office, or pantry storage.',
+    brand: 'ClearSpace',
+    features: ['Clear acrylic finish', 'Stackable sizes', 'Drawer-friendly layout'],
+    benefits: ['Shows well in before-and-after pins', 'Useful for renters', 'Simple product benefit'],
+    keywords: ['drawer organizers', 'acrylic storage', 'home organization'],
+    hashtags: ['#drawerorganizers', '#acrylicstorage', '#homeorganization'],
   },
 ]
 
@@ -93,6 +113,9 @@ export const demoPins: GeneratedPin[] = [
     cta: 'Save this desk setup',
     emotional_trigger: 'Feel energized without leaving your workflow.',
     marketing_angle: 'Problem-solution for sedentary workdays',
+    affiliate_url: 'https://amazon.com/example-walking-pad?tag=yourtag-20',
+    keywords: ['walking pad', 'home office', 'standing desk'],
+    hashtags: ['#walkingpad', '#homeoffice', '#standingdesk'],
     uploaded: false,
     status: 'Ready',
   },
@@ -104,6 +127,7 @@ export const demoQueue: PinQueueItem[] = [
     pin_id: 'pin-demo-1',
     product_id: 'demo-1',
     affiliate_link_id: 'link-demo-1',
+    affiliate_url: 'https://amazon.com/example-walking-pad?tag=yourtag-20',
     scheduled_at: new Date(Date.now() + 86400000).toISOString(),
     status: 'Scheduled',
   },

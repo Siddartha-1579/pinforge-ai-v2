@@ -13,6 +13,7 @@ interface FunctionCheck {
 }
 
 const functionChecks = [
+  { name: 'import-affiliate-product', body: { url: 'https://www.amazon.com/dp/B08N5WRWNW?tag=pinforge-20' } },
   { name: 'discover-products', body: { query: 'audit' } },
   {
     name: 'generate-pin-copy',
@@ -141,5 +142,9 @@ function summarizeFunctionResult(name: string, data: unknown) {
     return `Scheduler endpoint responded. Processed ${result.processed ?? 0}. ${result.reason ?? ''}`.trim()
   }
   if (name === 'generate-pin-copy') return Array.isArray(data) && data.length > 0 ? 'Valid pin copy returned.' : 'Function responded without pin copy.'
+  if (name === 'import-affiliate-product') {
+    const result = data as { resolved_url?: string; title?: string }
+    return result.resolved_url && result.title ? 'Affiliate import metadata returned.' : 'Function responded without import metadata.'
+  }
   return 'Function responded successfully.'
 }

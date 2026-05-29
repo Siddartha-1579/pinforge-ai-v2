@@ -8,14 +8,20 @@ const palettes = {
   'Productivity Style': ['#eff6ff', '#1e3a8a', '#2563eb', '#bfdbfe'],
 } as const
 
-export function downloadPinPng(pin: GeneratedPin, product?: Product) {
+export interface PinRenderResult {
+  imageLoaded: boolean
+  fallbackUsed: boolean
+  error?: string
+}
+
+export async function downloadPinPng(pin: GeneratedPin, product?: Product) {
   const canvas = document.createElement('canvas')
   canvas.width = 1000
   canvas.height = 1500
   const context = canvas.getContext('2d')
   if (!context) throw new Error('Canvas is not available in this browser.')
 
-  drawPin(context, pin, product)
+  await drawPinAsync(context, pin, product)
   const dataUrl = canvas.toDataURL('image/png')
   if (!dataUrl.startsWith('data:image/png')) throw new Error('PNG export failed.')
   const link = document.createElement('a')
@@ -26,6 +32,40 @@ export function downloadPinPng(pin: GeneratedPin, product?: Product) {
 
 export function drawPin(context: CanvasRenderingContext2D, pin: GeneratedPin, product?: Product) {
   const [background, text, accent, soft] = palettes[pin.style]
+  drawBasePin(context, pin, product, { background, text, accent, soft })
+  drawProductFallback(context, product, text, accent)
+}
+
+export async function drawPinAsync(context: CanvasRenderingContext2D, pin: GeneratedPin, product?: Product): Promise<PinRenderResult> {
+  const [background, text, accent, soft] = palettes[pin.style]
+  drawBasePin(context, pin, product, { background, text, accent, soft })
+
+  if (!product?.product_image_url) {
+    drawProductFallback(context, product, text, accent)
+    return { imageLoaded: false, fallbackUsed: true }
+  }
+
+  try {
+    const image = await loadImage(product.product_image_url)
+    drawProductImage(context, image)
+    return { imageLoaded: true, fallbackUsed: false }
+  } catch (error) {
+    drawProductFallback(context, product, text, accent)
+    return {
+      imageLoaded: false,
+      fallbackUsed: true,
+      error: error instanceof Error ? error.message : 'Product image could not be loaded.',
+    }
+  }
+}
+
+function drawBasePin(
+  context: CanvasRenderingContext2D,
+  pin: GeneratedPin,
+  product: Product | undefined,
+  palette: { background: string; text: string; accent: string; soft: string },
+) {
+  const { background, text, accent, soft } = palette
   context.clearRect(0, 0, 1000, 1500)
   context.fillStyle = background
   context.fillRect(0, 0, 1000, 1500)
@@ -70,6 +110,57 @@ export function drawPin(context: CanvasRenderingContext2D, pin: GeneratedPin, pr
   context.fillStyle = '#ffffff'
   context.font = '800 40px Arial'
   centerText(context, pin.cta, 500, 1392, 760)
+}
+
+function drawProductImage(context: CanvasRenderingContext2D, image: HTMLImageElement) {
+  const frame = { x: 220, y: 240, width: 560, height: 260 }
+  const scale = Math.max(frame.width / image.naturalWidth, frame.height / image.naturalHeight)
+  const width = image.naturalWidth * scale
+  const height = image.naturalHeight * scale
+  const x = frame.x + (frame.width - width) / 2
+  const y = frame.y + (frame.height - height) / 2
+
+  context.save()
+  roundedRect(context, frame.x, frame.y, frame.width, frame.height, 28)
+  context.clip()
+  context.drawImage(image, x, y, width, height)
+  context.restore()
+}
+
+function drawProductFallback(context: CanvasRenderingContext2D, product: Product | undefined, text: string, accent: string) {
+  context.save()
+  context.fillStyle = '#ffffff'
+  roundedRect(context, 245, 265, 510, 210, 30)
+  context.fill()
+  context.fillStyle = accent
+  roundedRect(context, 300, 305, 400, 92, 26)
+  context.fill()
+  context.fillStyle = text
+  context.globalAlpha = 0.18
+  context.beginPath()
+  context.arc(330, 415, 50, 0, Math.PI * 2)
+  context.fill()
+  context.beginPath()
+  context.arc(675, 300, 42, 0, Math.PI * 2)
+  context.fill()
+  context.globalAlpha = 1
+  context.fillStyle = '#ffffff'
+  context.font = '800 30px Arial'
+  centerText(context, product?.brand ?? 'Product Pick', 500, 363, 340)
+  context.fillStyle = text
+  context.font = '700 32px Arial'
+  wrapText(context, product?.name ?? 'Affiliate product', 310, 445, 380, 38, 2)
+  context.restore()
+}
+
+function loadImage(source: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image()
+    image.crossOrigin = 'anonymous'
+    image.onload = () => resolve(image)
+    image.onerror = () => reject(new Error('Product image could not be loaded.'))
+    image.src = source
+  })
 }
 
 function wrapText(

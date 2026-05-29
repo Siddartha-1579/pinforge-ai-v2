@@ -25,6 +25,12 @@ serve(async (request) => {
           trend_reasoning:
             'This seed has strong Pinterest save potential when framed as a useful visual solution.',
           target_audience: 'Pinterest shoppers looking for practical, attractive recommendations',
+          short_description: `${topic} can be framed as a useful shopping idea with a clear problem-solution angle.`,
+          brand: 'Research seed',
+          features: ['Pinterest-friendly positioning', 'Clear shopping intent', 'Benefit-led copy angle'],
+          benefits: ['Easy to turn into pin content', 'Useful for affiliate testing', 'Works with readable CTA placement'],
+          keywords: topic.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 8),
+          hashtags: topic.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 8).map((word) => `#${word.replace(/[^a-z0-9]/g, '')}`),
         },
       ],
       { headers: corsHeaders },

@@ -15,6 +15,7 @@ export function Generator() {
   const [generated, setGenerated] = useState<GeneratedPin[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
   const activeProductId = productId || products[0]?.id || ''
   const product = products.find((item) => item.id === activeProductId)
   const affiliateLink = product ? links.find((link) => link.product_id === product.id) : null
@@ -34,6 +35,8 @@ export function Generator() {
         product_id: product.id,
         affiliate_link_id: affiliateLink?.id ?? null,
         affiliate_url: affiliateUrl,
+        keywords: pin.keywords ?? product.keywords ?? [],
+        hashtags: pin.hashtags ?? product.hashtags ?? [],
         uploaded: false,
         status: 'Ready' as const,
       }))
@@ -66,6 +69,7 @@ export function Generator() {
         </form>
         {product && !affiliateUrl ? <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">Import an affiliate URL for this product before publishing.</p> : null}
         {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
+        {downloadError ? <p className="mt-3 text-sm text-rose-600">{downloadError}</p> : null}
       </Card>
 
       <section className="mt-6 grid gap-5 xl:grid-cols-2">
@@ -85,8 +89,17 @@ export function Generator() {
                 <p className="break-words text-sm"><strong>Affiliate URL:</strong> {pin.affiliate_url ?? links.find((link) => link.id === pin.affiliate_link_id)?.url ?? affiliateUrl ?? 'Missing'}</p>
                 <p className="text-sm"><strong>Trigger:</strong> {pin.emotional_trigger}</p>
                 <p className="text-sm"><strong>Angle:</strong> {pin.marketing_angle}</p>
+                {pin.keywords?.length ? <p className="text-sm"><strong>Keywords:</strong> {pin.keywords.join(', ')}</p> : null}
+                {pin.hashtags?.length ? <p className="text-sm"><strong>Hashtags:</strong> {pin.hashtags.join(' ')}</p> : null}
               </div>
-              <button className="btn-secondary mt-4" type="button" onClick={() => downloadPinPng(pin, product)}>
+              <button
+                className="btn-secondary mt-4"
+                type="button"
+                onClick={() => {
+                  setDownloadError(null)
+                  void downloadPinPng(pin, product).catch(() => setDownloadError('Could not export this pin as a PNG. Please try again.'))
+                }}
+              >
                 <Download size={16} />
                 Download PNG
               </button>

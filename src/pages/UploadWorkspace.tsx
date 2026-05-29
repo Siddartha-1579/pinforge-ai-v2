@@ -30,6 +30,7 @@ export function UploadWorkspace() {
           {pins.map((pin) => {
             const product = products.find((item) => item.id === pin.product_id)
             const link = links.find((item) => item.id === pin.affiliate_link_id || item.product_id === pin.product_id)
+            const affiliateUrl = pin.affiliate_url ?? link?.url ?? null
             const validation = validatePinForUpload(pin, product, link)
 
             return (
@@ -50,7 +51,7 @@ export function UploadWorkspace() {
                   ) : null}
                   <CopyRow label="Title" value={pin.title} onCopy={copy} />
                   <CopyRow label="Description" value={pin.description} onCopy={copy} />
-                  <CopyRow label="Affiliate link" value={link?.url ?? 'No affiliate link connected'} onCopy={copy} />
+                  <CopyRow label="Affiliate link" value={affiliateUrl ?? 'No affiliate link connected'} onCopy={copy} />
                   <WorkflowForm pin={pin} onSave={(updates) => updatePinWorkflow(pin.id, updates)} />
                   <div className="grid gap-2 sm:grid-cols-2">
                     <button className="btn-secondary" type="button" disabled={!validation.ok} onClick={() => void markPinUploaded(pin.id)}>

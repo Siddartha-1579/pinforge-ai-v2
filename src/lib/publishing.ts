@@ -62,7 +62,7 @@ export async function publishQueueItem({
 
   try {
     const { data, error } = await supabase.functions.invoke<{ pinterestUrl?: string }>('publish-queued-pin', {
-      body: { queueItemId: item.id, pinId: item.pin_id },
+      body: { queueItemId: item.id, pinId: item.pin_id, affiliateUrl: item.affiliate_url },
     })
     if (error) throw error
 

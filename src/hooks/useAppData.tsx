@@ -247,6 +247,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
                   pin_id: payload.id,
                   product_id: payload.product_id,
                   affiliate_link_id: payload.affiliate_link_id,
+                  affiliate_url: payload.affiliate_url,
                   status: payload.status ?? 'Draft',
                 },
                 ...current,
@@ -259,6 +260,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           pin_id: payload.id,
           product_id: payload.product_id,
           affiliate_link_id: payload.affiliate_link_id,
+          affiliate_url: payload.affiliate_url,
           status: payload.status ?? 'Draft',
           user_id: user.id,
         }, { onConflict: 'pin_id' })

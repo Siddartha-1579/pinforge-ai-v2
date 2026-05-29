@@ -22,7 +22,8 @@ export function Queue() {
     const pin = pins.find((next) => next.id === item.pin_id)
     const product = products.find((next) => next.id === item.product_id || next.id === pin?.product_id)
     const link = links.find((next) => next.id === item.affiliate_link_id || next.product_id === product?.id)
-    return { item, pin, product, link }
+    const affiliateUrl = item.affiliate_url ?? pin?.affiliate_url ?? link?.url ?? null
+    return { item, pin, product, link, affiliateUrl }
   }).filter((row) => {
     const haystack = `${row.pin?.title ?? ''} ${row.product?.name ?? ''} ${row.pin?.style ?? ''}`.toLowerCase()
     return haystack.includes(query.toLowerCase()) && (status === 'All' || row.item.status === status)
@@ -63,13 +64,13 @@ export function Queue() {
   return (
     <>
       <PageHeader title="Pin Queue" eyebrow="Content management">
-        <button className="btn-secondary" type="button" onClick={() => exportCsv('pin-queue.csv', rows.map(({ item, pin, product, link }) => ({
+        <button className="btn-secondary" type="button" onClick={() => exportCsv('pin-queue.csv', rows.map(({ item, pin, product, affiliateUrl }) => ({
           product: product?.name,
           title: pin?.title,
           style: pin?.style,
           scheduled_at: item.scheduled_at,
           status: item.status,
-          affiliate_link: link?.url,
+          affiliate_link: affiliateUrl,
         })))}>
           <Download size={16} />
           Export
@@ -112,7 +113,7 @@ export function Queue() {
                 </tr>
               </thead>
               <tbody>
-                {pageRows.map(({ item, pin, product, link }) => (
+                {pageRows.map(({ item, pin, product, affiliateUrl }) => (
                   <tr key={item.id} className="border-t border-slate-200 dark:border-white/10">
                     <td className="p-3"><input type="checkbox" checked={selected.includes(item.id)} onChange={(event) => setSelected((current) => event.target.checked ? [...current, item.id] : current.filter((id) => id !== item.id))} /></td>
                     <td className="p-3">{product?.name ?? 'Unassigned'}</td>
@@ -120,7 +121,7 @@ export function Queue() {
                     <td className="p-3">{pin?.style ?? '-'}</td>
                     <td className="p-3">{item.scheduled_at ? new Date(item.scheduled_at).toLocaleDateString() : 'Not scheduled'}</td>
                     <td className="p-3"><StatusBadge status={item.status} /></td>
-                    <td className="max-w-56 truncate p-3">{link?.url ?? 'Missing'}</td>
+                    <td className="max-w-56 truncate p-3">{affiliateUrl ?? 'Missing'}</td>
                   </tr>
                 ))}
               </tbody>

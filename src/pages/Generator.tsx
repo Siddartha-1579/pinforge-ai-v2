@@ -32,6 +32,7 @@ export function Generator() {
         id: crypto.randomUUID(),
         product_id: product.id,
         affiliate_link_id: affiliateLink?.id ?? null,
+        affiliate_url: affiliateLink?.url ?? null,
         uploaded: false,
         status: 'Ready' as const,
       }))
@@ -80,7 +81,7 @@ export function Generator() {
                 <h2 className="text-lg font-semibold">{pin.title}</h2>
                 <p className="text-sm text-slate-600 dark:text-slate-300">{pin.description}</p>
                 <p className="text-sm"><strong>CTA:</strong> {pin.cta}</p>
-                <p className="break-words text-sm"><strong>Affiliate URL:</strong> {links.find((link) => link.id === pin.affiliate_link_id)?.url ?? affiliateLink?.url ?? 'Missing'}</p>
+                <p className="break-words text-sm"><strong>Affiliate URL:</strong> {pin.affiliate_url ?? links.find((link) => link.id === pin.affiliate_link_id)?.url ?? affiliateLink?.url ?? 'Missing'}</p>
                 <p className="text-sm"><strong>Trigger:</strong> {pin.emotional_trigger}</p>
                 <p className="text-sm"><strong>Angle:</strong> {pin.marketing_angle}</p>
               </div>

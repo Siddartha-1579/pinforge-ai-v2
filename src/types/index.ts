@@ -43,6 +43,7 @@ export interface GeneratedPin {
   user_id?: string
   product_id?: string | null
   affiliate_link_id?: string | null
+  affiliate_url?: string | null
   style: PinStyle
   title: string
   description: string
@@ -91,6 +92,7 @@ export interface PinQueueItem {
   pin_id: string
   product_id?: string | null
   affiliate_link_id?: string | null
+  affiliate_url?: string | null
   scheduled_at?: string | null
   status: PinStatus
   notes?: string | null

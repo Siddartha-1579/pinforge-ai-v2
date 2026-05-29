@@ -9,7 +9,7 @@ export function validatePinForUpload(pin: GeneratedPin, product?: Product, link?
   const messages: string[] = []
 
   if (!product?.name) messages.push('Product is missing.')
-  if (!link?.url) messages.push('Affiliate URL is missing.')
+  if (!pin.affiliate_url && !link?.url) messages.push('Affiliate URL is missing.')
   if (!pin.title || pin.title.length < 12) messages.push('Title is too short.')
   if (!pin.description || pin.description.length < 40) messages.push('Description is too short.')
   if (!pin.cta || pin.cta.length < 4) messages.push('CTA is missing.')
